@@ -1,0 +1,157 @@
+using System;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        // Os funcionários de determinada empresa registram suas entradas e saídas em
+        // equipamentos REP (registrador eletrônico de ponto). Esses registros são
+        // salvos na base de dados no seguinte formato:
+        Registro[] listaRegistros = new Registro[14];
+        listaRegistros[0] = new Registro
+        { Data = new DateTime(2019, 10, 1), Hora = "08:01", Funcionario = "João" };
+        listaRegistros[1] = new Registro
+        { Data = new DateTime(2019, 10, 1), Hora = "07:56", Funcionario = "Maria" };
+        listaRegistros[2] = new Registro
+        { Data = new DateTime(2019, 10, 1), Hora = "12:02", Funcionario = "João" };
+        listaRegistros[3] = new Registro
+        { Data = new DateTime(2019, 10, 1), Hora = "12:01", Funcionario = "Maria" };
+        listaRegistros[4] = new Registro
+        { Data = new DateTime(2019, 10, 1), Hora = "13:01", Funcionario = "João" };
+        listaRegistros[5] = new Registro
+        { Data = new DateTime(2019, 10, 1), Hora = "12:59", Funcionario = "Maria" };
+        listaRegistros[6] = new Registro
+        { Data = new DateTime(2019, 10, 1), Hora = "18:02", Funcionario = "João" };
+        listaRegistros[7] = new Registro
+        { Data = new DateTime(2019, 10, 1), Hora = "17:58", Funcionario = "Maria" };
+        listaRegistros[8] = new Registro
+        { Data = new DateTime(2019, 10, 2), Hora = "08:09", Funcionario = "João" };
+        listaRegistros[9] = new Registro
+        { Data = new DateTime(2019, 10, 2), Hora = "12:01", Funcionario = "João" };
+        listaRegistros[10] = new Registro
+        { Data = new DateTime(2019, 10, 2), Hora = "12:54", Funcionario = "João" };
+        listaRegistros[11] = new Registro
+        { Data = new DateTime(2019, 10, 2), Hora = "12:58", Funcionario = "Maria" };
+        listaRegistros[12] = new Registro
+        { Data = new DateTime(2019, 10, 2), Hora = "18:02", Funcionario = "João" };
+        listaRegistros[13] = new Registro
+        { Data = new DateTime(2019, 10, 2), Hora = "18:30", Funcionario = "Maria" };
+
+        string[] funcionarios = FuncionarioUnico(listaRegistros);
+
+        Resultado[] resultados = new Resultado[funcionarios.Length * 2];
+        int indiceResultado = 0;
+
+        foreach (string funcionario in funcionarios)
+        {
+            DateTime[] dias = ObterDiasUnicos(listaRegistros, funcionario);
+
+            foreach (DateTime dia in dias)
+            {
+                Registro[] registrosDia = FiltroRegistro(listaRegistros, funcionario, dia);
+
+                TimeSpan totalHoras = CalcularTotalHoras(registrosDia);
+
+                resultados[indiceResultado++] = new Resultado
+                {
+                    Funcionario = funcionario,
+                    Data = dia.ToString("yyyy-MM-dd"),
+                    Total = totalHoras.ToString(@"hh\:mm")
+                };
+            }
+        }
+
+        Array.Sort(resultados, (x, y) =>
+        {
+            int cmpFuncionario = string.Compare(x.Funcionario, y.Funcionario, StringComparison.Ordinal);
+            return cmpFuncionario != 0 ? cmpFuncionario : string.Compare(x.Data, y.Data, StringComparison.Ordinal);
+        });
+
+        foreach (var resultado in resultados)
+        {
+            Console.WriteLine($"Funcionario: {resultado.Funcionario}, Data: {resultado.Data}, Total: {resultado.Total}");
+        }
+
+    }
+    static string[] FuncionarioUnico(Registro[] registros)
+    {
+        string[] funcionarios = new string[registros.Length];
+        int count = 0;
+
+        foreach (var registro in registros)
+        {
+            if (Array.IndexOf(funcionarios, registro.Funcionario) == -1)
+            {
+                funcionarios[count++] = registro.Funcionario;
+            }
+        }
+
+        Array.Resize(ref funcionarios, count);
+        return funcionarios;
+    }
+    static DateTime[] ObterDiasUnicos(Registro[] registros, string funcionario)
+    {
+        DateTime[] dias = new DateTime[registros.Length];
+        int count = 0;
+
+        foreach (var registro in registros)
+        {
+            if (registro.Funcionario == funcionario && Array.IndexOf(dias, registro.Data) == -1)
+            {
+                dias[count++] = registro.Data;
+            }
+        }
+
+        Array.Resize(ref dias, count);
+        return dias;
+    }
+
+    static Registro[] FiltroRegistro(Registro[] registros, string funcionario, DateTime data)
+    {
+        Registro[] filtrados = new Registro[registros.Length];
+        int count = 0;
+
+        foreach (var registro in registros)
+        {
+            if (registro.Funcionario == funcionario && registro.Data == data)
+            {
+                filtrados[count++] = registro;
+            }
+        }
+
+        Array.Resize(ref filtrados, count);
+        return filtrados;
+    }
+
+    static TimeSpan CalcularTotalHoras(Registro[] registros)
+    {
+        Array.Sort(registros, (x, y) => string.Compare(x.Hora, y.Hora, StringComparison.Ordinal));
+        TimeSpan total = TimeSpan.Zero;
+
+        for (int i = 0; i < registros.Length; i += 2)
+        {
+            if (i + 1 < registros.Length)
+            {
+                TimeSpan entrada = TimeSpan.Parse(registros[i].Hora);
+                TimeSpan saida = TimeSpan.Parse(registros[i + 1].Hora);
+                total += saida - entrada;
+            }
+        }
+
+        return total;
+    }
+
+    class Registro
+    {
+        public DateTime Data;
+        public string Hora;
+        public string Funcionario;
+    }
+
+    class Resultado
+    {
+        public string Funcionario;
+        public string Data;
+        public string Total;
+    }
+}
